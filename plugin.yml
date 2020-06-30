@@ -1,0 +1,5 @@
+name: Crossbow
+version: 1.0.0
+api: [4.0.0]
+authors: [LeinneSW]
+main: leinne\crossbow\Main
