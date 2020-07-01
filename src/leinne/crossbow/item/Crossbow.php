@@ -7,6 +7,7 @@ namespace leinne\crossbow\item;
 use leinne\crossbow\sound\CrossbowLoadingEndSound;
 use leinne\crossbow\sound\CrossbowLoadingStartSound;
 use leinne\crossbow\sound\CrossbowShootSound;
+
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\entity\projectile\Projectile;
@@ -14,13 +15,13 @@ use pocketmine\event\entity\EntityShootBowEvent;
 use pocketmine\event\entity\ProjectileLaunchEvent;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\ItemUseResult;
+use pocketmine\item\Releasable;
 use pocketmine\item\Tool;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
-use pocketmine\world\sound\BowShootSound;
 
-class Crossbow extends Tool{
+class Crossbow extends Tool implements Releasable{
     /**
      * Returns the maximum amount of damage this item can take before it breaks.
      */
@@ -42,7 +43,7 @@ class Crossbow extends Tool{
             }
 
             $time = $player->getItemUseDuration();
-            if($time >= 23){
+            if($time >= 24 - $this->getEnchantmentLevel(Enchantment::get(Enchantment::QUICK_CHARGE)) * 5){
                 if($player->hasFiniteResources()){
                     $player->getInventory()->removeItem($item);
                 }
@@ -99,8 +100,9 @@ class Crossbow extends Tool{
                     return ItemUseResult::FAIL();
                 }
 
+                $nbt->removeTag("chargedItem");
                 $ev->getProjectile()->spawnToAll();
-                $location->getWorldNonNull()->addSound($location, new BowShootSound());
+                $location->getWorld()->addSound($location, new CrossbowShootSound());
             }else{
                 $entity->spawnToAll();
             }
@@ -108,8 +110,6 @@ class Crossbow extends Tool{
             if($player->hasFiniteResources()){
                 $this->applyDamage(1);
             }
-            $nbt->removeTag("chargedItem");
-            $player->getWorld()->addSound($player->getLocation(), new CrossbowShootSound());
         }
         return ItemUseResult::SUCCESS();
     }
