@@ -9,6 +9,7 @@ use leinne\crossbow\item\Crossbow;
 use pocketmine\event\Listener;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\item\ItemFactory;
+use pocketmine\item\ItemIdentifier;
 use pocketmine\item\ItemIds;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemTransactionData;
@@ -17,7 +18,7 @@ use pocketmine\plugin\PluginBase;
 class Main extends PluginBase implements Listener{
 
     public function onEnable() : void{
-        ItemFactory::getInstance()->register(new Crossbow(ItemIds::CROSSBOW, 0, "Crossbow"));
+        ItemFactory::getInstance()->register(new Crossbow(new ItemIdentifier(ItemIds::CROSSBOW, 0), "Crossbow"));
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
     }
 
