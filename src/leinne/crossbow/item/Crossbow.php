@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace leinne\crossbow\item;
 
+use leinne\crossbow\event\EntityShootCrossbowEvent;
 use leinne\crossbow\sound\CrossbowLoadingEndSound;
 use leinne\crossbow\sound\CrossbowLoadingStartSound;
 use leinne\crossbow\sound\CrossbowShootSound;
@@ -11,7 +12,6 @@ use leinne\crossbow\sound\CrossbowShootSound;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\entity\projectile\Projectile;
-use pocketmine\event\entity\EntityShootBowEvent;
 use pocketmine\event\entity\ProjectileLaunchEvent;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\ItemUseResult;
@@ -38,7 +38,7 @@ class Crossbow extends Tool implements Releasable{
         $arrow = $nbt->getCompoundTag("chargedItem");
         if($arrow === null){
             $item = VanillaItems::ARROW();
-            if($player->hasFiniteResources() and !$player->getInventory()->contains($item)){
+            if($player->hasFiniteResources() && !$player->getInventory()->contains($item)){
                 return ItemUseResult::FAIL();
             }
 
@@ -57,8 +57,10 @@ class Crossbow extends Tool implements Releasable{
                 $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingStartSound());
             }
         }elseif($arrow->getDouble("chargedTime") < microtime(true)){
+            if($this->hasEnchantment(Enchantment::get(Enchantment::MULTISHOT))){
+                //TODO: 멀티샷 구현
+            }
             $location = $player->getLocation();
-
             $entity = new Arrow(Location::fromObject(
                 $player->getEyePos(),
                 $player->getWorld(),
@@ -80,7 +82,7 @@ class Crossbow extends Tool implements Releasable{
             if($this->hasEnchantment(Enchantment::FLAME())){
                 $entity->setOnFire(intdiv($entity->getFireTicks(), 20) + 100);
             }
-            $ev = new EntityShootBowEvent($player, $this, $entity, 7);
+            $ev = new EntityShootCrossbowEvent($player, $this, $entity, 7);
             $ev->call();
 
             $entity = $ev->getProjectile(); //This might have been changed by plugins
@@ -102,7 +104,7 @@ class Crossbow extends Tool implements Releasable{
 
                 $nbt->removeTag("chargedItem");
                 $ev->getProjectile()->spawnToAll();
-                $location->getWorld()->addSound($location, new CrossbowShootSound());
+                $location->world->addSound($location, new CrossbowShootSound());
             }else{
                 $entity->spawnToAll();
             }

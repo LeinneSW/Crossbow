@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace leinne\crossbow;
 
-use leinne\crossbow\enchant\QuickChargeEnchantment;
 use leinne\crossbow\item\Crossbow;
 
 use pocketmine\event\Listener;
@@ -20,7 +19,8 @@ use pocketmine\plugin\PluginBase;
 class Main extends PluginBase implements Listener{
 
     public function onEnable() : void{
-        Enchantment::register(new QuickChargeEnchantment(Enchantment::QUICK_CHARGE, "%enchantment.quick_charge", Enchantment::RARITY_MYTHIC, Enchantment::SLOT_BOW, Enchantment::SLOT_NONE, 3));
+        Enchantment::register(new Enchantment(Enchantment::MULTISHOT, "%enchantment.multishot", Enchantment::RARITY_MYTHIC, Enchantment::SLOT_BOW, Enchantment::SLOT_NONE, 1));
+        Enchantment::register(new Enchantment(Enchantment::QUICK_CHARGE, "%enchantment.quick_charge", Enchantment::RARITY_MYTHIC, Enchantment::SLOT_BOW, Enchantment::SLOT_NONE, 3));
         ItemFactory::getInstance()->register(new Crossbow(new ItemIdentifier(ItemIds::CROSSBOW, 0), "Crossbow"));
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
     }
@@ -32,10 +32,11 @@ class Main extends PluginBase implements Listener{
         if(
             !$packet instanceof InventoryTransactionPacket ||
             !$packet->trData instanceof UseItemTransactionData ||
-            !$packet->trData->getActionType() === UseItemTransactionData::ACTION_CLICK_AIR
+            $packet->trData->getActionType() !== UseItemTransactionData::ACTION_CLICK_AIR
         ){
             return;
         }
+
         $inv = $player->getInventory();
         $item = $inv->getItemInHand();
         if(!$item instanceof Crossbow)
