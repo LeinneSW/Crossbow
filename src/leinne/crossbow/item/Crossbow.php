@@ -19,21 +19,12 @@ use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\item\ItemIds;
 use pocketmine\item\ItemUseResult;
-use pocketmine\item\Releasable;
 use pocketmine\item\Tool;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
-use pocketmine\Server;
 
-class Crossbow extends Tool implements Releasable{
-    public function getMaxDurability() : int{
-        return 464;
-    }
-
-    public function getFuelTime() : int{
-        return 200;
-    }
+class Crossbow extends Tool{
 
     public function isCharged() : bool{
         return $this->getNamedTag()->hasTag("chargedItem");
@@ -47,7 +38,7 @@ class Crossbow extends Tool implements Releasable{
         if($item === null || $item->isNull()){
             $this->getNamedTag()->removeTag("chargedItem");
         }elseif($item->getId() === ItemIds::FIREWORKS || $item instanceof ArrowItem){
-            $this->getNamedTag()->setTag("chargedItem", $item->nbtSerialize()->setDouble("shootTick", Server::getInstance()->getTick() + 5));
+            $this->getNamedTag()->setTag("chargedItem", $item->nbtSerialize()->setDouble("shootTime", microtime(true) + 0.26));
         }
         return $this;
     }
@@ -77,7 +68,7 @@ class Crossbow extends Tool implements Releasable{
             }else{
                 $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingStartSound($quickLevel > 0));
             }
-        }elseif($item->getDouble("shootTick") >= Server::getInstance()->getTick()){
+        }elseif($item->getDouble("shootTime", 0.0) >= microtime(true)){
             $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingEndSound($quickLevel > 0));
         }else{
             $item = Item::nbtDeserialize($item);
@@ -146,6 +137,14 @@ class Crossbow extends Tool implements Releasable{
             }
         }
         return ItemUseResult::SUCCESS();
+    }
+
+    public function getMaxDurability() : int{
+        return 464;
+    }
+
+    public function getFuelTime() : int{
+        return 200;
     }
 
 }

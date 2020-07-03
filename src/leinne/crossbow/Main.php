@@ -68,10 +68,10 @@ class Main extends PluginBase implements Listener{
         $player->resetItemCooldown($item);
         $inv->setItemInHand($item);
 
-        if($oldItem->isCharged() && !$inv->getItemInHand()->getNamedTag()->hasTag("chargedItem")){
-            $player->setUsingItem(false);
-        }else{
+        if(!$oldItem->isCharged() && !$item->isCharged()){
             $player->setUsingItem(true);
+        }else{
+            $player->setUsingItem(false);
         }
     }
 
