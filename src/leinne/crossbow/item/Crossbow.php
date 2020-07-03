@@ -13,18 +13,20 @@ use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\entity\projectile\Projectile;
 use pocketmine\event\entity\ProjectileLaunchEvent;
+use pocketmine\item\Arrow as ArrowItem;
 use pocketmine\item\enchantment\Enchantment;
+use pocketmine\item\Item;
+use pocketmine\item\ItemFactory;
+use pocketmine\item\ItemIds;
 use pocketmine\item\ItemUseResult;
 use pocketmine\item\Releasable;
 use pocketmine\item\Tool;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\Server;
 
 class Crossbow extends Tool implements Releasable{
-    /**
-     * Returns the maximum amount of damage this item can take before it breaks.
-     */
     public function getMaxDurability() : int{
         return 464;
     }
@@ -33,55 +35,85 @@ class Crossbow extends Tool implements Releasable{
         return 200;
     }
 
+    public function isCharged() : bool{
+        return $this->getNamedTag()->hasTag("chargedItem");
+    }
+
+    public function getChargedItem() : ?Item{
+        return ($tag = $this->getNamedTag()->getCompoundTag("chargedItem")) === null ? null : Item::nbtDeserialize($tag);
+    }
+
+    public function setCharged(?Item $item) : self{
+        if($item === null || $item->isNull()){
+            $this->getNamedTag()->removeTag("chargedItem");
+        }elseif($item->getId() === ItemIds::FIREWORKS || $item instanceof ArrowItem){
+            $this->getNamedTag()->setTag("chargedItem", $item->nbtSerialize()->setDouble("shootTick", Server::getInstance()->getTick() + 5));
+        }
+        return $this;
+    }
+
     public function onClickAir(Player $player, Vector3 $directionVector) : ItemUseResult{
         $nbt = $this->getNamedTag();
-        $arrow = $nbt->getCompoundTag("chargedItem");
-        if($arrow === null){
+        $item = $nbt->getCompoundTag("chargedItem");
+        $quickLevel = $this->getEnchantmentLevel(Enchantment::get(Enchantment::QUICK_CHARGE));
+        if($item === null){
             $item = VanillaItems::ARROW();
-            if($player->hasFiniteResources() && !$player->getInventory()->contains($item)){
-                return ItemUseResult::FAIL();
+            if($player->hasFiniteResources()){
+                if(!$player->getInventory()->contains($item)){
+                    $item = ItemFactory::getInstance()->get(ItemIds::FIREWORKS); //왼손 미구현
+                    if(!$player->getInventory()->contains($item)){
+                        return ItemUseResult::FAIL();
+                    }
+                }
             }
 
             $time = $player->getItemUseDuration();
-            if($time >= 24 - $this->getEnchantmentLevel(Enchantment::get(Enchantment::QUICK_CHARGE)) * 5){
+            if($time >= 24 - $quickLevel * 5){
                 if($player->hasFiniteResources()){
                     $player->getInventory()->removeItem($item);
                 }
-                $tag = $item->nbtSerialize();
-                $tag->removeTag("id");
-                $tag->setDouble("chargedTime", microtime(true) + 0.25);
-                $tag->setString("Name", "minecraft:arrow");
-                $nbt->setTag("chargedItem", $tag);
-                $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingEndSound());
+                $this->setCharged($item);
+                $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingEndSound($quickLevel > 0));
             }else{
-                $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingStartSound());
+                $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingStartSound($quickLevel > 0));
             }
-        }elseif($arrow->getDouble("chargedTime") < microtime(true)){
-            if($this->hasEnchantment(Enchantment::get(Enchantment::MULTISHOT))){
+        }elseif($item->getDouble("shootTick") >= Server::getInstance()->getTick()){
+            $player->getWorld()->addSound($player->getLocation(), new CrossbowLoadingEndSound($quickLevel > 0));
+        }else{
+            $item = Item::nbtDeserialize($item);
+            $location = $player->getLocation();
+            if($item instanceof ArrowItem){
+                $entity = new Arrow(Location::fromObject(
+                    $player->getEyePos(),
+                    $player->getWorld(),
+                    ($location->yaw > 180 ? 360 : 0) - $location->yaw,
+                    -$location->pitch
+                ), $player, true);
+                if($player->isCreative(true)){
+                    $entity->setPickupMode(Arrow::PICKUP_CREATIVE);
+                }
+            }elseif($item->getId() === ItemIds::FIREWORKS){
+                //TODO: 폭죽 구현
+                $entity = new Arrow(Location::fromObject(
+                    $player->getEyePos(),
+                    $player->getWorld(),
+                    ($location->yaw > 180 ? 360 : 0) - $location->yaw,
+                    -$location->pitch
+                ), $player, true);
+                if($player->isCreative(true)){
+                    $entity->setPickupMode(Arrow::PICKUP_CREATIVE);
+                }
+            }else{
+                $nbt->removeTag("chargeItem");
+                return ItemUseResult::SUCCESS();
+            }
+
+            $multishot = $this->hasEnchantment(Enchantment::get(Enchantment::MULTISHOT));
+            if($multishot){
                 //TODO: 멀티샷 구현
             }
-            $location = $player->getLocation();
-            $entity = new Arrow(Location::fromObject(
-                $player->getEyePos(),
-                $player->getWorld(),
-                ($location->yaw > 180 ? 360 : 0) - $location->yaw,
-                -$location->pitch
-            ), $player, true);
             $entity->setMotion($player->getDirectionVector());
 
-            $infinity = $this->hasEnchantment(Enchantment::INFINITY());
-            if($infinity){
-                $entity->setPickupMode(Arrow::PICKUP_CREATIVE);
-            }
-            if(($punchLevel = $this->getEnchantmentLevel(Enchantment::PUNCH())) > 0){
-                $entity->setPunchKnockback($punchLevel);
-            }
-            if(($powerLevel = $this->getEnchantmentLevel(Enchantment::POWER())) > 0){
-                $entity->setBaseDamage($entity->getBaseDamage() + (($powerLevel + 1) / 2));
-            }
-            if($this->hasEnchantment(Enchantment::FLAME())){
-                $entity->setOnFire(intdiv($entity->getFireTicks(), 20) + 100);
-            }
             $ev = new EntityShootCrossbowEvent($player, $this, $entity, 7);
             $ev->call();
 
@@ -110,7 +142,7 @@ class Crossbow extends Tool implements Releasable{
             }
 
             if($player->hasFiniteResources()){
-                $this->applyDamage(1);
+                $this->applyDamage($multishot ? 3 : 1);
             }
         }
         return ItemUseResult::SUCCESS();

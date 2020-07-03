@@ -7,11 +7,13 @@ namespace leinne\crossbow;
 use leinne\crossbow\item\Crossbow;
 
 use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerItemUseEvent;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\ItemFactory;
 use pocketmine\item\ItemIdentifier;
 use pocketmine\item\ItemIds;
+use pocketmine\item\ItemUseResult;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemTransactionData;
 use pocketmine\plugin\PluginBase;
@@ -43,10 +45,33 @@ class Main extends PluginBase implements Listener{
             return;
 
         $ev->setCancelled();
-        if(!$player->useHeldItem()){
+        $directionVector = $player->getDirectionVector();
+        $ev = new PlayerItemUseEvent($player, $item, $directionVector);
+        if($player->hasItemCooldown($item) or $player->isSpectator()){
+            $ev->setCancelled();
+        }
+
+        $ev->call();
+
+        if($ev->isCancelled()){
             $session->getInvManager()->syncSlot($inv, $inv->getHeldItemIndex());
-        }elseif($item->getNamedTag()->hasTag("chargedItem") && !$inv->getItemInHand()->getNamedTag()->hasTag("chargedItem")){
+            return;
+        }
+
+        $oldItem = clone $item;
+        $result = $item->onClickAir($player, $directionVector);
+        if($result->equals(ItemUseResult::FAIL())){
+            $session->getInvManager()->syncSlot($inv, $inv->getHeldItemIndex());
+            return;
+        }
+
+        $player->resetItemCooldown($item);
+        $inv->setItemInHand($item);
+
+        if($oldItem->isCharged() && !$inv->getItemInHand()->getNamedTag()->hasTag("chargedItem")){
             $player->setUsingItem(false);
+        }else{
+            $player->setUsingItem(true);
         }
     }
 
