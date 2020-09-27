@@ -44,11 +44,11 @@ class Main extends PluginBase implements Listener{
         if(!$item instanceof Crossbow)
             return;
 
-        $ev->setCancelled();
+        $ev->cancel();
         $directionVector = $player->getDirectionVector();
         $ev = new PlayerItemUseEvent($player, $item, $directionVector);
         if($player->hasItemCooldown($item) or $player->isSpectator()){
-            $ev->setCancelled();
+            $ev->cancel();
         }
 
         $ev->call();
