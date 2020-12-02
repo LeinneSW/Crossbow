@@ -6,10 +6,14 @@ namespace leinne\crossbow;
 
 use leinne\crossbow\item\Crossbow;
 
+use pocketmine\data\bedrock\EnchantmentIdMap;
+use pocketmine\data\bedrock\EnchantmentIds;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerItemUseEvent;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\item\enchantment\Enchantment;
+use pocketmine\item\enchantment\ItemFlags;
+use pocketmine\item\enchantment\Rarity;
 use pocketmine\item\ItemFactory;
 use pocketmine\item\ItemIdentifier;
 use pocketmine\item\ItemIds;
@@ -21,9 +25,11 @@ use pocketmine\plugin\PluginBase;
 class Main extends PluginBase implements Listener{
 
     public function onEnable() : void{
-        Enchantment::register(new Enchantment(Enchantment::MULTISHOT, "%enchantment.multishot", Enchantment::RARITY_MYTHIC, Enchantment::SLOT_BOW, Enchantment::SLOT_NONE, 1));
-        Enchantment::register(new Enchantment(Enchantment::QUICK_CHARGE, "%enchantment.quick_charge", Enchantment::RARITY_MYTHIC, Enchantment::SLOT_BOW, Enchantment::SLOT_NONE, 3));
+        EnchantmentIdMap::getInstance()->register(EnchantmentIds::MULTISHOT, new Enchantment(1000, "%enchantment.multishot", Rarity::MYTHIC, ItemFlags::BOW, ItemFlags::NONE, 1));
+        EnchantmentIdMap::getInstance()->register(EnchantmentIds::QUICK_CHARGE, new Enchantment(1001, "%enchantment.quick_charge", Rarity::MYTHIC, ItemFlags::BOW, ItemFlags::NONE, 3));
+
         ItemFactory::getInstance()->register(new Crossbow(new ItemIdentifier(ItemIds::CROSSBOW, 0), "Crossbow"));
+
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
     }
 
