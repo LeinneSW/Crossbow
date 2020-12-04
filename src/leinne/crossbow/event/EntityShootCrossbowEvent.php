@@ -15,12 +15,11 @@ use pocketmine\item\Item;
 class EntityShootCrossbowEvent extends EntityEvent implements Cancellable{
     use CancellableTrait;
 
-    /** @var Item */
-    private $crossbow;
-    /** @var Projectile */
-    private $projectile;
-    /** @var float */
-    private $force;
+    private Item $crossbow;
+
+    private Entity $projectile;
+
+    private float $force;
 
     public function __construct(Living $shooter, Item $crossbow, Projectile $projectile, float $force){
         $this->entity = $shooter;

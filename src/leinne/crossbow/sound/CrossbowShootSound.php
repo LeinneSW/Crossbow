@@ -10,7 +10,9 @@ use pocketmine\world\sound\Sound;
 
 class CrossbowShootSound implements Sound{
 
-    public function encode(?Vector3 $pos){
-        return LevelSoundEventPacket::create(LevelSoundEventPacket::SOUND_CROSSBOW_SHOOT, $pos);
+    public function encode(?Vector3 $pos) : array{
+        return [
+            LevelSoundEventPacket::create(LevelSoundEventPacket::SOUND_CROSSBOW_SHOOT, $pos)
+        ];
     }
 }

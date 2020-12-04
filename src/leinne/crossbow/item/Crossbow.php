@@ -9,12 +9,13 @@ use leinne\crossbow\sound\CrossbowLoadingEndSound;
 use leinne\crossbow\sound\CrossbowLoadingStartSound;
 use leinne\crossbow\sound\CrossbowShootSound;
 
+use pocketmine\data\bedrock\EnchantmentIdMap;
+use pocketmine\data\bedrock\EnchantmentIds;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\entity\projectile\Projectile;
 use pocketmine\event\entity\ProjectileLaunchEvent;
 use pocketmine\item\Arrow as ArrowItem;
-use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\item\ItemIds;
@@ -46,7 +47,7 @@ class Crossbow extends Tool{
     public function onClickAir(Player $player, Vector3 $directionVector) : ItemUseResult{
         $nbt = $this->getNamedTag();
         $item = $nbt->getCompoundTag("chargedItem");
-        $quickLevel = $this->getEnchantmentLevel(Enchantment::get(Enchantment::QUICK_CHARGE));
+        $quickLevel = $this->getEnchantmentLevel(EnchantmentIdMap::getInstance()->fromId(EnchantmentIds::QUICK_CHARGE));
         if($item === null){
             $item = VanillaItems::ARROW();
             if($player->hasFiniteResources()){
@@ -99,7 +100,7 @@ class Crossbow extends Tool{
                 return ItemUseResult::SUCCESS();
             }
 
-            $multishot = $this->hasEnchantment(Enchantment::get(Enchantment::MULTISHOT));
+            $multishot = $this->hasEnchantment(EnchantmentIdMap::getInstance()->fromId(EnchantmentIds::MULTISHOT));
             if($multishot){
                 //TODO: 멀티샷 구현
             }

@@ -10,16 +10,15 @@ use pocketmine\world\sound\Sound;
 
 class CrossbowLoadingEndSound implements Sound{
 
-    private $quick;
+    private bool $quick;
 
     public function __construct(bool $quick = false){
         $this->quick = $quick;
     }
 
-    public function encode(?Vector3 $pos){
-        return LevelSoundEventPacket::create(
-            $this->quick ? LevelSoundEventPacket::SOUND_CROSSBOW_QUICK_CHARGE_END : LevelSoundEventPacket::SOUND_CROSSBOW_LOADING_END,
-            $pos
-        );
+    public function encode(?Vector3 $pos) : array{
+        return [
+            LevelSoundEventPacket::create($this->quick ? LevelSoundEventPacket::SOUND_CROSSBOW_QUICK_CHARGE_END : LevelSoundEventPacket::SOUND_CROSSBOW_LOADING_END, $pos)
+        ];
     }
 }
